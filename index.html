@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol: 09-09-2003</title>
+    <style>
+        :root {
+            --bg: #0d0d0d; --card: #1a1a1a; --accent: #00e5ff;
+            --error: #ff4444; --pass: #ff007b; --text: #ffffff;
+        }
+        body {
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Courier New', monospace;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; transition: background-color 0.3s;
+        }
+        #quiz-container {
+            background: var(--card); padding: 30px; border-radius: 4px;
+            border: 1px solid #333; width: 420px; text-align: center;
+        }
+        .btn {
+            display: block; width: 100%; padding: 12px; margin: 10px 0;
+            background: transparent; border: 1px solid var(--accent);
+            color: var(--accent); cursor: pointer; font-family: 'Courier New', monospace;
+        }
+        .btn:hover:not(:disabled) { background: var(--accent); color: #000; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #feedback { font-weight: bold; height: 30px; margin-bottom: 10px; font-size: 1.2rem; }
+        .boo { color: var(--error); animation: shake 0.2s infinite; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(5px); } 50% { transform: translateX(-5px); } }
+        #progress { font-size: 0.7rem; color: #555; margin-top: 15px; }
+        .kiss { color: var(--pass); font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container">
+        <div id="feedback"></div>
+        <h2 id="question">Initializing...</h2>
+        <div id="answer-buttons"></div>
+        <div id="progress"></div>
+    </div>
+
+    <script>
+        const webhookURL = "https://discord.com/api/webhooks/1471765918865555581/U-UBuKmLO_xf9Jv3EPSXExI2V_CsdGGsWCqZWl4WgZrYuX8EOCFo2u7KhN0LlvohMdud"; 
+
+        const quizData = [
+            { q: "What's my favorite color?", options: ["Red", "Blue", "Black"], correct: 1 },
+            { q: "Favorite song?", options: ["Under the Influence", "The Residuals", "No Guidance"], correct: 1 },
+            { q: "What do I hate the most?", options: ["Hot weather", "Cold rain", "Crowded malls"], correct: 0 },
+            { q: "How old am I?", options: ["21", "22", "23"], correct: 1 },
+            { q: "Favorite movie?", options: ["Girl, Interrupted", "Gone Girl", "The Notebook"], correct: 0 },
+            { q: "How many siblings do I have?", options: ["1", "2", "3"], correct: 1 },
+            { q: "Favorite number?", options: ["7", "9", "11"], correct: 1 },
+            { q: "What upsets me the most?", options: ["Inconsistency", "Bad coffee", "Being late"], correct: 0 },
+            { q: "My college program?", options: ["CS", "CPE", "EE"], correct: 1 },
+            { q: "My birthday?", options: ["Sept 9, 2003", "Aug 9, 2003", "Sept 19, 2003"], correct: 0 }
+        ];
+
+        let currentIdx = 0; let score = 0;
+
+        function loadQuestion() {
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('feedback').classList.remove('boo');
+            const data = quizData[currentIdx];
+            document.getElementById('question').innerText = data.q;
+            document.getElementById('progress').innerText = `SYSTEM_AUTH_STEP: ${currentIdx + 1} / ${quizData.length}`;
+            const btnContainer = document.getElementById('answer-buttons');
+            btnContainer.innerHTML = '';
+            data.options.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.innerText = opt; b.classList.add('btn');
+                b.onclick = () => handleAnswer(i);
+                btnContainer.appendChild(b);
+            });
+        }
+
+        function handleAnswer(choice) {
+            const isCorrect = choice === quizData[currentIdx].correct;
+            if (isCorrect) { score++; proceed(); } 
+            else {
+                document.getElementById('feedback').innerText = "👎 BOO!";
+                document.getElementById('feedback').classList.add('boo');
+                document.body.style.backgroundColor = "#2a0000";
+                document.querySelectorAll('.btn').forEach(b => b.disabled = true);
+                setTimeout(() => { document.body.style.backgroundColor = "#0d0d0d"; proceed(); }, 800);
+            }
+        }
+
+        function proceed() {
+            currentIdx++;
+            if (currentIdx < quizData.length) loadQuestion();
+            else finalize();
+        }
+
+        async function finalize() {
+            const status = score >= 8 ? "PASSED ✅" : "FAILED ❌";
+            
+            // This sends the data to your Discord
+            await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: `📊 **Quiz Result**\n**Target:** User\n**Score:** ${score}/10\n**Status:** ${status}`
+                })
+            });
+
+            showFinalScreen();
+        }
+
+        function showFinalScreen() {
+            const container = document.getElementById('quiz-container');
+            if (score >= 8) {
+                container.innerHTML = `<h1 class="kiss">KISS KA SAKIN 💋💋💋</h1><p>Score: ${score}/10. Authentication Success.</p>`;
+            } else {
+                container.innerHTML = `<h2 style="color:#ff4444;">Score: ${score}/10</h2><p>"May try harder to get to know me next time or just find someone else."</p>`;
+            }
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
